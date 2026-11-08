@@ -5,24 +5,39 @@
 <body><main>
 <h1>Home<span>TV</span></h1>
 <p id="status" role="status" aria-live="polite">Verbinde mit dem Fernseher …</p>
-<nav id="tabs" class="tabs" hidden><button data-tab="search" class="on">Suchen</button><button data-tab="favorites">Favoriten</button><button data-tab="resume">Weiterschauen</button></nav>
+<nav id="tabs" class="tabs" hidden><button data-tab="search" class="on">Suchen</button><button data-tab="categories">Kategorien</button><button data-tab="favorites">Favoriten</button><button data-tab="resume">Weiter&shy;schauen</button></nav>
+
+<div id="targetBar" class="target" hidden><label for="favTarget">Zielliste</label><select id="favTarget"></select></div>
 
 <section id="search" class="pane" hidden>
-<form id="searchForm"><label for="query">Titel, Sender oder Genre</label>
-<div class="row"><input id="query" type="search" autocomplete="off" maxlength="100" placeholder="z. B. Tatort"><button type="submit">Suchen</button></div>
+<form id="searchForm"><div class="row"><input id="query" type="search" autocomplete="off" maxlength="100" placeholder="Titel, Sender oder Genre" aria-label="Titel, Sender oder Genre"><button type="submit">Suchen</button></div>
 <label class="check"><input id="onlyTv" type="checkbox"> nur Sender</label></form>
-<label for="favTarget">Hinzufügen zu Favoritenliste</label><select id="favTarget"></select>
 <ul id="results" class="list"></ul>
 </section>
 
+<section id="categories" class="pane" hidden>
+<div id="kinds" class="kinds"><button data-kind="tv" class="on">Sender</button><button data-kind="movies">Filme</button><button data-kind="series">Serien</button></div>
+<div id="catBrowse"><p class="hint">Antippen öffnet die Kategorie. 👁 blendet sie am Fernseher ein oder aus.</p><ul id="catList" class="list"></ul><button id="catListMore" type="button" class="secondary" hidden>Weitere Kategorien</button></div>
+<div id="catView" hidden>
+<div class="row head"><button id="catBack" type="button">← Kategorien</button><h2 id="catTitle"></h2></div>
+<div class="row actions"><button id="catHide" type="button"></button><button id="catAddAll" type="button" hidden></button></div>
+<p id="pickHint" class="hint" hidden>Häkchen setzen oder entfernen, dann „Übernehmen“. Abgehakt = in der Zielliste.</p>
+<div id="pickBar" class="row actions" hidden><button id="catAll" type="button">Alle</button><button id="catNone" type="button">Keine</button></div>
+<ul id="catItems" class="list"></ul>
+<button id="catMore" type="button" class="secondary" hidden>Weitere laden</button>
+<button id="catApply" type="button" class="apply" hidden disabled>Übernehmen</button>
+</div>
+</section>
+
 <section id="favorites" class="pane" hidden>
-<form id="newList" class="row"><input id="newName" maxlength="60" autocomplete="off" placeholder="Neue Liste, z. B. Nachrichten"><button type="submit">Anlegen</button></form>
+<form id="newList" class="row"><input id="newName" maxlength="60" autocomplete="off" placeholder="Neue Liste, z. B. Nachrichten" aria-label="Name der neuen Liste"><button type="submit">Anlegen</button></form>
 <ul id="lists" class="list"></ul>
 <div id="listView" hidden>
 <div class="row head"><button id="listBack" type="button">← Listen</button><h2 id="listTitle"></h2></div>
-<div class="row"><input id="rename" maxlength="60" autocomplete="off"><button id="renameDo" type="button">Umbenennen</button></div>
+<button id="listAdd" type="button">+ Sender aus Kategorien hinzufügen</button>
 <ul id="listItems" class="list"></ul>
-<button id="moreItems" type="button" hidden>Weitere laden</button>
+<button id="moreItems" type="button" class="secondary" hidden>Weitere laden</button>
+<div class="row"><input id="rename" maxlength="60" autocomplete="off" aria-label="Neuer Name"><button id="renameDo" type="button">Umbenennen</button></div>
 <button id="deleteList" type="button" class="danger">Liste löschen</button>
 </div>
 </section>
