@@ -1,0 +1,22 @@
+.tabs{display:flex;gap:6px;margin:8px 0 16px}
+.tabs button{flex:1;margin:0;padding:10px 6px;background:#1e222a;color:#f5f6f7;font-weight:600}
+.tabs button.on{background:#fff;color:#0b0c10}
+.row{display:flex;gap:8px;align-items:center}
+.row input{flex:1;min-width:0}
+.row button{width:auto;margin:0;padding:14px 16px}
+.row.head h2{flex:1;margin:0;font-size:20px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.row.head button{background:#1e222a;color:#f5f6f7}
+form{margin:0 0 12px}
+select{display:block;width:100%;font:inherit;padding:12px;border-radius:12px;border:1px solid #4a525c;background:#1e222a;color:#f5f6f7;margin-bottom:12px}
+.check{display:flex;align-items:center;gap:8px;font-weight:400;margin:10px 0 0}
+.check input{width:22px;height:22px}
+.list{list-style:none;margin:8px 0;padding:0}
+.list li{display:flex;align-items:center;gap:6px;padding:10px 0;border-bottom:1px solid #ffffff1a}
+.list .text{flex:1;min-width:0}
+.list .title{display:block;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.list .sub{display:block;font-size:14px;color:#a9b0b8;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.list button{width:auto;margin:0;padding:10px 12px;min-width:44px;background:#1e222a;color:#f5f6f7;font-weight:600}
+.list button.play{background:#b5e1ca;color:#0b0c10}
+button.secondary{background:#1e222a;color:#f5f6f7;margin-top:24px}
+button.danger{background:#5a1f22;color:#fff}
+#toast{position:fixed;left:16px;right:16px;bottom:16px;padding:12px 16px;border-radius:12px;background:#f5f6f7;color:#0b0c10;font-weight:600}

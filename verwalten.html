@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="referrer" content="no-referrer">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self'; connect-src https://ntfy.sh; base-uri 'none'; form-action 'none'">
+<meta name="robots" content="noindex"><title>HomeTV – Mit Handy verwalten</title><link rel="stylesheet" href="send.css"><link rel="stylesheet" href="manage.css"><script defer src="manage.js"></script></head>
+<body><main>
+<h1>Home<span>TV</span></h1>
+<p id="status" role="status" aria-live="polite">Verbinde mit dem Fernseher …</p>
+<nav id="tabs" class="tabs" hidden><button data-tab="search" class="on">Suchen</button><button data-tab="favorites">Favoriten</button><button data-tab="resume">Weiterschauen</button></nav>
+
+<section id="search" class="pane" hidden>
+<form id="searchForm"><label for="query">Titel, Sender oder Genre</label>
+<div class="row"><input id="query" type="search" autocomplete="off" maxlength="100" placeholder="z. B. Tatort"><button type="submit">Suchen</button></div>
+<label class="check"><input id="onlyTv" type="checkbox"> nur Sender</label></form>
+<label for="favTarget">Hinzufügen zu Favoritenliste</label><select id="favTarget"></select>
+<ul id="results" class="list"></ul>
+</section>
+
+<section id="favorites" class="pane" hidden>
+<form id="newList" class="row"><input id="newName" maxlength="60" autocomplete="off" placeholder="Neue Liste, z. B. Nachrichten"><button type="submit">Anlegen</button></form>
+<ul id="lists" class="list"></ul>
+<div id="listView" hidden>
+<div class="row head"><button id="listBack" type="button">← Listen</button><h2 id="listTitle"></h2></div>
+<div class="row"><input id="rename" maxlength="60" autocomplete="off"><button id="renameDo" type="button">Umbenennen</button></div>
+<ul id="listItems" class="list"></ul>
+<button id="moreItems" type="button" hidden>Weitere laden</button>
+<button id="deleteList" type="button" class="danger">Liste löschen</button>
+</div>
+</section>
+
+<section id="resume" class="pane" hidden><ul id="resumeItems" class="list"></ul><p id="resumeEmpty" hidden>Nichts angefangen.</p></section>
+
+<button id="end" type="button" class="secondary" hidden>Verbindung beenden</button>
+<p class="small">Verbindung nur mit diesem einen Fernseher, Ende-zu-Ende-verschlüsselt über ntfy.sh. Stream-Adressen und Zugangsdaten verlassen den Fernseher nicht.</p>
+</main></body></html>
