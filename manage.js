@@ -17,7 +17,7 @@
   try { sessionStorage.setItem('hometv-manage', JSON.stringify({t:topic, k:key})); } catch (_) {}
 
   var seq = Date.now(), peer = 0, pending = {}, lists = [], openList = null, source = null, ended = false, cryptoKey = null;
-  var kind = 'tv', openCat = null, lastSearch = null;
+  var kind = 'tv', openCat = null, lastSearch = null, lastId = null, reconnects = 0;
   function b64url(bytes) { var s = ''; bytes.forEach(function (b) { s += String.fromCharCode(b); }); return btoa(s).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, ''); }
   function fromB64url(text) { var t = text.replace(/-/g, '+').replace(/_/g, '/'); while (t.length % 4) t += '='; return Uint8Array.from(atob(t), function (c) { return c.charCodeAt(0); }); }
   function aad(dir) { return new TextEncoder().encode('HomeTV-Manage-v1|' + topic + '|' + dir); }
@@ -31,14 +31,35 @@
     if (ended) return Promise.reject(Error('Verbindung beendet.'));
     message.s = ++seq;
     var number = message.s, iv = crypto.getRandomValues(new Uint8Array(12));
-    var answer = new Promise(function (resolve, reject) { pending[number] = {resolve:resolve, reject:reject}; setTimeout(function () { if (pending[number]) { delete pending[number]; reject(Error('Der Fernseher antwortet nicht. Ist HomeTV noch offen?')); } }, 30000); });
+    var waiting = {}, answer = new Promise(function (resolve, reject) { waiting.reject = reject; pending[number] = {resolve:resolve, reject:reject}; });
+    answer.catch(function () {});
     return keyFor().then(function (k) { return crypto.subtle.encrypt({name:'AES-GCM', iv:iv, additionalData:aad('u')}, k, new TextEncoder().encode(JSON.stringify(message))); })
-      .then(function (sealed) { return fetch('https://ntfy.sh/' + topic, {method:'POST', body:'v1.' + b64url(iv) + '.' + b64url(new Uint8Array(sealed)), credentials:'omit', cache:'no-store', referrerPolicy:'no-referrer'}); })
-      .then(function (response) { if (!response.ok) throw Error('Senden nicht möglich (' + response.status + ').'); return answer; });
+      .then(function (sealed) { return post('v1.' + b64url(iv) + '.' + b64url(new Uint8Array(sealed)), 0); })
+      .then(function () {
+        // The wait for the answer starts once the message is at the relay (not during pauses of the relay).
+        setTimeout(function () { if (pending[number]) { delete pending[number]; waiting.reject(Error('Der Fernseher antwortet nicht. Ist HomeTV noch offen?')); } }, 30000);
+        return answer;
+      }, function (e) { delete pending[number]; throw e; });
+  }
+  // "?tags=u" lets the device wait only for the phone's messages (fewer requests). ntfy.sh answers 429 when the home
+  // connection (phone and TV share it) asks too often: wait (Retry-After if readable, else 5, 10, 20 s) and send again.
+  function pause(ms) { return new Promise(function (resolve) { setTimeout(resolve, ms); }); }
+  function post(body, attempt) {
+    return fetch('https://ntfy.sh/' + topic + '?tags=u', {method:'POST', body:body, credentials:'omit', cache:'no-store', referrerPolicy:'no-referrer'}).then(function (response) {
+      if (response.ok) return;
+      if (response.status === 429 && attempt < 3 && !ended) {
+        var header = response.headers && typeof response.headers.get === 'function' ? Number(response.headers.get('Retry-After')) : NaN;
+        var ms = header > 0 && header <= 60 ? header * 1000 : 5000 * Math.pow(2, attempt);
+        toast('Übertragungsdienst bremst kurz, neuer Versuch in ' + Math.round(ms / 1000) + ' s …');
+        return pause(ms).then(function () { return post(body, attempt + 1); });
+      }
+      throw Error(response.status === 429 ? 'Der Übertragungsdienst bremst gerade (zu viele Anfragen). Bitte eine Minute warten und dann erneut versuchen.' : 'Senden nicht möglich (' + response.status + ').');
+    });
   }
   function act(message, done) { return send(message).then(function (reply) { if (reply && reply.msg) toast(reply.msg); if (done) done(reply); return reply; }).catch(function (e) { toast(e.message); }); }
   function receive(text) {
     var event; try { event = JSON.parse(text); } catch (_) { return; }
+    if (event && typeof event.id === 'string' && /^[A-Za-z0-9]{6,32}$/.test(event.id)) lastId = event.id;
     var parts = event && typeof event.message === 'string' ? event.message.split('.') : [];
     if (parts.length !== 3 || parts[0] !== 'v1') return;
     keyFor().then(function (k) { return crypto.subtle.decrypt({name:'AES-GCM', iv:fromB64url(parts[1]), additionalData:aad('d')}, k, fromB64url(parts[2])); }).then(function (plain) {
@@ -226,9 +247,19 @@
 
   // --- Connection: an event stream from the relay (from the start of this session) and a hello to the device.
   var since = Math.floor(Date.now() / 1000) - 60;
-  source = new EventSource('https://ntfy.sh/' + topic + '/sse?since=' + since);
-  source.onmessage = function (e) { receive(e.data); };
-  source.onerror = function () { if (!ended) say('Verbindung wackelt, versuche erneut …'); };
+  // The browser reconnects by itself after network hiccups; after an answer like 429 it gives up (CLOSED): then a new
+  // stream after a growing pause, continuing after the last message seen.
+  function listen() {
+    source = new EventSource('https://ntfy.sh/' + topic + '/sse?since=' + (lastId || since));
+    source.onopen = function () { reconnects = 0; };
+    source.onmessage = function (e) { reconnects = 0; receive(e.data); };
+    source.onerror = function () {
+      if (ended) return; say('Verbindung wackelt, versuche erneut …');
+      var dead = source; if (dead.readyState !== 2) return;
+      reconnects++; setTimeout(function () { if (!ended && source === dead) listen(); }, Math.min(60000, 5000 * Math.pow(2, reconnects - 1)));
+    };
+  }
+  listen();
   send({t:'hello'}).then(function () {
     say('Mit dem Fernseher verbunden.'); $('tabs').hidden = false; $('end').hidden = false; showTab('search');
   }).catch(function (e) { say(e.message + ' Am Fernseher den QR-Code neu anzeigen und erneut scannen.'); });
