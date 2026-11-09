@@ -26,9 +26,34 @@
     var t = $('toast'); if (!t) { t = document.createElement('div'); t.id = 'toast'; t.setAttribute('role', 'status'); document.body.appendChild(t); }
     t.textContent = text; t.hidden = false; clearTimeout(toast.timer); toast.timer = setTimeout(function () { t.hidden = true; }, 3500);
   }
+  // Working indicator: while the device has not answered, a running bar at the top and a spinner in the button that
+  // was pressed (taps do not focus buttons on iOS, so the last tap or the submitted form tells which one).
+  var busy = 0, pressed = null;
+  function buttonOf(node) { while (node && node.tagName !== 'BUTTON') node = node.parentNode; return node || null; }
+  if (typeof document.addEventListener === 'function') {
+    document.addEventListener('click', function (e) { var b = buttonOf(e.target); if (b) pressed = {button:b, at:Date.now()}; }, true);
+    document.addEventListener('submit', function (e) {
+      var b = e.submitter || (e.target && e.target.querySelector && e.target.querySelector('button[type=submit]'));
+      if (b) pressed = {button:b, at:Date.now()};
+    }, true);
+  }
+  function classes(node) { return node && node.classList && typeof node.classList.add === 'function' ? node.classList : null; }
+  function working() {
+    var button = pressed && Date.now() - pressed.at < 1500 ? pressed.button : null; pressed = null;
+    busy++; if (classes(document.body)) document.body.classList.add('busy');
+    if (classes(button)) { button.classList.add('working'); button.setAttribute('aria-busy', 'true'); }
+    return function () {
+      busy = Math.max(0, busy - 1); if (!busy && classes(document.body)) document.body.classList.remove('busy');
+      if (classes(button)) { button.classList.remove('working'); button.removeAttribute('aria-busy'); }
+    };
+  }
   // Sends a command; the answer of the device (same number in "r") goes to then().
   function send(message) {
     if (ended) return Promise.reject(Error('Verbindung beendet.'));
+    var done = working();
+    return transmit(message).then(function (reply) { done(); return reply; }, function (e) { done(); throw e; });
+  }
+  function transmit(message) {
     message.s = ++seq;
     var number = message.s, iv = crypto.getRandomValues(new Uint8Array(12));
     var waiting = {}, answer = new Promise(function (resolve, reject) { waiting.reject = reject; pending[number] = {resolve:resolve, reject:reject}; });
